@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>To Do List 6</title>
+<style>
+  :root {
+    --card: #E8DED4;
+    --green: #3C4A2F;
+    --brown: #715743;
+    --white: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: "Times New Roman", Times, serif;
+  }
+  body { padding: 12px; }
+
+  /* Kolom: lebar tetap, tinggi bertambah mengikuti panjang tulisan */
+  .card {
+    display: block;
+    width: 300px;
+    max-width: 100%;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 14px 14px 12px 14px;
+  }
+
+  .row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 5px 0;
+  }
+  .row.last { padding-bottom: 0; }
+
+  /* Kotak centang */
+  .row input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin: 1px 0 0 0;
+    border: 2px solid var(--green);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+  }
+  .row input[type="checkbox"]:checked { background: var(--green); }
+  .row input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 0px;
+    width: 4px;
+    height: 9px;
+    border: solid var(--white);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .row input[type="checkbox"]:focus-visible,
+  .del:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 2px;
+  }
+
+  /* Teks yang bisa diketik (turun ke bawah, tidak melebar ke samping) */
+  .text {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--green);
+    font-family: "Times New Roman", Times, serif;
+    font-size: 14px;
+    line-height: 20px;
+    outline: none;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  /* Tercoret hanya jika dicentang DAN sudah ada tulisan */
+  .row input[type="checkbox"]:checked + .text:not(:empty) {
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+  .text:empty::before {
+    content: "Write here";
+    color: rgba(60, 74, 47, 0.45);
+  }
+
+  /* Tombol hapus: kanan bawah, menempel pada kotak centang ke-6 */
+  .foot {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 0;
+  }
+  .del {
+    background: var(--brown);
+    color: var(--white);
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12px;
+    line-height: 1;
+    border: 0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin: 0;
+    cursor: pointer;
+  }
+  .del:hover { filter: brightness(1.12); }
+  .del:active { transform: scale(0.97); }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <div class="row"><input type="checkbox" aria-label="Centang 1"><div class="text" contenteditable="true" spellcheck="false"></div></div>
+  <div class="row"><input type="checkbox" aria-label="Centang 2"><div class="text" contenteditable="true" spellcheck="false"></div></div>
+  <div class="row"><input type="checkbox" aria-label="Centang 3"><div class="text" contenteditable="true" spellcheck="false"></div></div>
+  <div class="row"><input type="checkbox" aria-label="Centang 4"><div class="text" contenteditable="true" spellcheck="false"></div></div>
+  <div class="row"><input type="checkbox" aria-label="Centang 5"><div class="text" contenteditable="true" spellcheck="false"></div></div>
+  <div class="row last"><input type="checkbox" aria-label="Centang 6"><div class="text" contenteditable="true" spellcheck="false"></div></div>
+  <div class="foot"><button class="del" id="del" type="button">delete</button></div>
+</div>
+
+<script>
+(function () {
+  var KEY = "todo-notion-6-coklat-v1";
+  var boxes = document.querySelectorAll('.row input[type="checkbox"]');
+  var texts = document.querySelectorAll('.row .text');
+
+  function save() {
+    try {
+      var data = [];
+      for (var i = 0; i < texts.length; i++) {
+        data.push({ t: texts[i].textContent, c: boxes[i].checked });
+      }
+      localStorage.setItem(KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return;
+      var data = JSON.parse(raw);
+      for (var i = 0; i < texts.length && i < data.length; i++) {
+        texts[i].textContent = data[i].t || "";
+        boxes[i].checked = !!data[i].c;
+      }
+    } catch (e) {}
+  }
+
+  for (var i = 0; i < texts.length; i++) {
+    (function (idx) {
+      texts[idx].addEventListener("input", function () {
+        if (texts[idx].textContent === "") texts[idx].innerHTML = "";
+        save();
+      });
+      texts[idx].addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (texts[idx + 1]) texts[idx + 1].focus();
+        }
+      });
+      // tempel sebagai teks biasa
+      texts[idx].addEventListener("paste", function (e) {
+        e.preventDefault();
+        var t = (e.clipboardData || window.clipboardData).getData("text").replace(/\s*\n\s*/g, " ");
+        document.execCommand("insertText", false, t);
+      });
+      boxes[idx].addEventListener("change", save);
+    })(i);
+  }
+
+  // Hapus: kosongkan semua tulisan dan hilangkan semua centang
+  document.getElementById("del").addEventListener("click", function () {
+    for (var i = 0; i < texts.length; i++) {
+      texts[i].innerHTML = "";
+      boxes[i].checked = false;
+    }
+    save();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
